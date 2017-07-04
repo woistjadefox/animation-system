@@ -23,3 +23,7 @@ The section after the states form the settings of the animation in general:
 It’s possible to test the animation within the scene view by choosing first the state array number in the “Player” section and then hitting the “Play” button. 
  
 Besides this simple animation which moves a Transform to a fixed position, there are other helpful components such as animating a Transform’s rotation, or fading the colors of a material, etc. The animation system offers an “AnimationBase” class with all of the important main functions. New components with additional functionality can easily be implemented by deriving from that base class.
+
+### Credits
+The repo contains the free asset "Bezier Curve Editor" by Arkham Interactive from Unity's asset store: https://www.assetstore.unity3d.com/en/#!/content/11278
+I modified a few scripts in order to get the AnimationSystem work with bezier curves. 
