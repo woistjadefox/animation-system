@@ -1,5 +1,5 @@
 # AnimationSystem
-This little framework is visual animation system that can manipulate Transforms and other components. Essentially, level designers can take a specific animation class and define states and customize settings. These MonoBehaviour scripts, also provide public methods to start, to stop or to transit into a specific defined state. 
+This little framework is a visual animation system that can manipulate Transforms and other components. Level designers can use a specific animation class and define states and customize settings. These MonoBehaviour scripts also provide public methods to start, to stop or to transit into a specific defined state. 
  
 ### Example AnimationFixedPosition
 ![alt text](http://www.unity-glue.com/r/animationfixedposition.png "AnimationFixedPosition.cs")
