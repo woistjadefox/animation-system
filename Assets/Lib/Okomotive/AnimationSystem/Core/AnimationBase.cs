@@ -1,13 +1,16 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace MRW.AnimationSystem {
+namespace Okomotive.AnimationSystem {
 
     public enum AnimationStateType {
         Idle, Running
     }
 
-    [AddComponentMenu("MRW/Animation System/Animation Ease In Out")]
+    public enum AnimationStep {
+        FixedUpdate, Update
+    }
+
     public abstract class AnimationBase : MonoBehaviour {
 
         [SerializeField]
@@ -18,6 +21,10 @@ namespace MRW.AnimationSystem {
         protected bool loop = false;
         [SerializeField]
         protected AnimationState[] states;
+        [SerializeField]
+        protected bool dontInterrupt = false;
+        [SerializeField]
+        protected AnimationStep step;
 
 #if UNITY_EDITOR
         private EditorCoroutine editorPlay;
@@ -27,7 +34,9 @@ namespace MRW.AnimationSystem {
 
         private Coroutine animationRoutine;
 
-        public abstract void Action(float time, AnimationCurve animationCurve);
+        private Coroutine singleStateRoutine;
+
+        public abstract void Action(float time, float speed, AnimationCurve animationCurve);
 
         public virtual void OnStart() { }
 
@@ -47,20 +56,23 @@ namespace MRW.AnimationSystem {
         }
         
         private void OnDisable() {
-            if (animationRoutine != null) StopCoroutine(animationRoutine);
+            Stop();
         }
 
         public void SetTarget(Transform target) {
             this.target = target;
         }
 
-        private void Start() {
+        public virtual void Awake() {
 
             if (target == null) {
                 target = GetComponent<Transform>();
             }
 
             OnStart();
+        }
+
+        private void Start() {
 
             if (initDone == false) {
                 Init();
@@ -74,19 +86,26 @@ namespace MRW.AnimationSystem {
             if(state == AnimationStateType.Running) {
                 PlayAllStates();
             } 
-
-
         }
 
         public void Stop() {
             if (!enabled) return;
 
             state = AnimationStateType.Idle;
-            if (animationRoutine != null) StopCoroutine(animationRoutine);
+            if (animationRoutine != null) {
+                StopCoroutine(animationRoutine);
+                StopCoroutine(singleStateRoutine);
+            }
+        }
+
+        public void StopAndDisable() {
+            Stop();
+            enabled = false;
         }
 
         public void PlayAllStates() {
-            if (!enabled) return;
+            if (enabled == false || gameObject.activeSelf == false || gameObject.activeInHierarchy == false) return;
+            if (dontInterrupt && state == AnimationStateType.Running) return;
 
             Stop();
             animationRoutine = StartCoroutine(IPlayAllStates());
@@ -107,7 +126,7 @@ namespace MRW.AnimationSystem {
 
                     if (states[i].IsProcessable()) {
                         OnPlay(states[i]);
-                        yield return animationRoutine = StartCoroutine(states[i].Process(this, Action));
+                        yield return singleStateRoutine = StartCoroutine(states[i].Process(this, step, Action));
                     }
                 }
 
@@ -118,10 +137,15 @@ namespace MRW.AnimationSystem {
         }
 
         public void PlayState(int nr) {
-            if (!enabled) return;
+            if (enabled == false || gameObject.activeSelf == false || gameObject.activeInHierarchy == false) return;
+            if (dontInterrupt && state == AnimationStateType.Running) return;
 
             Stop();
             animationRoutine = StartCoroutine(IPlayState(nr));
+        }
+
+        public Coroutine GetAnimationRoutine() {
+            return animationRoutine;
         }
 
         private IEnumerator IPlayState(int nr) {
@@ -130,21 +154,21 @@ namespace MRW.AnimationSystem {
 
             if (states[nr].IsProcessable()) {
                 OnPlay(states[nr]);
-                yield return animationRoutine = StartCoroutine(states[nr].Process(this, Action));
+                yield return singleStateRoutine = StartCoroutine(states[nr].Process(this, step, Action));
             }
 
             state = AnimationStateType.Idle;
         }
 
 #if UNITY_EDITOR
-        public void PlayInEditor(int state) {
+        public void EditorPlayState(int state) {
             OnSave();
             OnStart();
             OnPlay(states[state]);
             editorPlay = EditorCoroutine.StartCoroutine(states[state].ProcessInEditor(Action));
         }
 
-        public void PlayInEditorReset() {
+        public void EditorPlayReset() {
             if (editorPlay != null) editorPlay.Stop();
             OnReset();
         }

@@ -1,27 +1,31 @@
 ﻿using UnityEngine;
 using UnityEngine.Events;
 using System.Collections;
+using Okomotive.Toolset;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
-namespace MRW.AnimationSystem {
+namespace Okomotive.AnimationSystem {
 
-    public delegate void AnimationStateAction(float t, AnimationCurve curve);
+    public delegate void AnimationStateAction(float time, float speed, AnimationCurve curve);
+
 
     [System.Serializable]
-    public class AnimationState : ISerializationCallbackReceiver {
+    public sealed class AnimationState : ISerializationCallbackReceiver {
 
         [SerializeField]
-        private float time = 1f;
+        private float time;
         [SerializeField]
-        private float delay = 0f;
+        private AnimationStateSpeed speed;
         [SerializeField]
-        private bool loop = false;
+        private float delay;
         [SerializeField]
-        private bool triggerOnce = false;
+        private bool loop;
         [SerializeField]
-        private AnimationCurve curve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+        private bool triggerOnce;
+        [SerializeField]
+        private AnimationCurve curve;
         [SerializeField]
         private UnityEvent enterEvents;
         [SerializeField]
@@ -29,10 +33,10 @@ namespace MRW.AnimationSystem {
 
         private bool triggered = false;
         private YieldInstruction delayYield;
+        private YieldInstruction fixedUpdateYield;
 
 
         public void OnBeforeSerialize() {
-
         }
 
         public void OnAfterDeserialize() {
@@ -40,6 +44,12 @@ namespace MRW.AnimationSystem {
             if (delay > 0f) {
                 delayYield = new WaitForSeconds(delay);
             }
+
+            if (curve.Evaluate(0.5f) == 0f && curve.Evaluate(0.14f) == 0f) {
+                curve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+            }
+
+            fixedUpdateYield = new WaitForFixedUpdate();
         }
 
         public float GetTime() {
@@ -80,15 +90,15 @@ namespace MRW.AnimationSystem {
         }
 
 
-        public IEnumerator Process(MonoBehaviour m, AnimationStateAction action) {
+        public IEnumerator Process(MonoBehaviour m, AnimationStep step, AnimationStateAction action) {
 
+            triggered = true;
             bool oneLoop = true;
 
             while(oneLoop) {
-
                 if (HasDelay()) yield return delayYield;
 
-                enterEvents.Invoke();
+                if(enterEvents.GetPersistentEventCount() > 0) enterEvents.Invoke();
 
                 for (float t = 0f; t < 1f; t += Time.deltaTime / time) {
 
@@ -96,12 +106,17 @@ namespace MRW.AnimationSystem {
                         t = 1f;
                     }
 
-                    action(t, curve);
-                    yield return null;
+                    action(t, speed.GetValue(), curve);
+
+                    if(step == AnimationStep.FixedUpdate) {
+                        yield return fixedUpdateYield;
+                    } else {
+                        yield return null;
+                    }
+
                 }
 
-                exitEvents.Invoke();
-                triggered = true;
+                if (exitEvents.GetPersistentEventCount() > 0) exitEvents.Invoke();
 
                 if (IsLoop() == false) oneLoop = false;
             }
@@ -109,8 +124,6 @@ namespace MRW.AnimationSystem {
 
 #if UNITY_EDITOR
         public IEnumerator ProcessInEditor(AnimationStateAction action) {
-
-
 
             float startVal = (float)EditorApplication.timeSinceStartup;
 
@@ -124,13 +137,13 @@ namespace MRW.AnimationSystem {
                 diff = (float)EditorApplication.timeSinceStartup - startVal;
                 t += diff / time;
 
-                action(t, curve);
+                action(t, speed.GetValue(), curve);
 
                 startVal = (float)EditorApplication.timeSinceStartup;
                 yield return null;
             }
 
-            action(1, curve);
+            action(1, speed.GetValue(), curve);
         }
 #endif
 

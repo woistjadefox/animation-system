@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 
-namespace MRW.AnimationSystem {
+namespace Okomotive.AnimationSystem {
 
     [CustomEditor(typeof(AnimationBase), true, isFallback = true)]
     [CanEditMultipleObjects]
@@ -42,7 +42,7 @@ namespace MRW.AnimationSystem {
                 if (onPlay == false && GUILayout.Button("Play", GUILayout.Width(100))) {
 
                     if (animation.StateExists(playState)) {
-                        animation.PlayInEditor(playState);
+                        animation.EditorPlayState(playState);
                         onPlay = true;
                     } else {
                         EditorUtility.DisplayDialog("State does not exists", "State " + playState + " is not defined!", "ok");
@@ -53,7 +53,7 @@ namespace MRW.AnimationSystem {
                     if (GUILayout.Button("Reset", GUILayout.Width(100))) {
 
                         if (animation.StateExists(playState)) {
-                            animation.PlayInEditorReset();
+                            animation.EditorPlayReset();
                             onPlay = false;
                         } else {
                             EditorUtility.DisplayDialog("State does not exists", "State " + playState + " is not defined!", "ok");

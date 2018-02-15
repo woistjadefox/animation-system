@@ -1,12 +1,9 @@
 ﻿using UnityEngine;
-using System.Collections;
 
+namespace Okomotive.AnimationSystem {
 
-namespace MRW.AnimationSystem {
-
-    [AddComponentMenu("MRW/Animation System/Animation Fixed Rotation")]
+    [AddComponentMenu("Okomotive/Animation System/Animation Fixed Rotation")]
     public sealed class AnimationFixedRotation : AnimationBase {
-
 
         [SerializeField, Range(0, 1), HideInInspector]
         private float position = 0;
@@ -25,6 +22,8 @@ namespace MRW.AnimationSystem {
 
         private Quaternion startRot;
         private Quaternion endRot;
+		private float curveValue;
+		private Quaternion currentRotation;
 
         public override void OnStart() {
 
@@ -58,13 +57,33 @@ namespace MRW.AnimationSystem {
             }
         }
 
-        public override void Action(float time, AnimationCurve animationCurve) {
+        public override void Action(float time, float speed, AnimationCurve animationCurve) {
 
-            if (localRotation) {
-                target.localRotation = Quaternion.Lerp(startRot, endRot, animationCurve.Evaluate(time));
+			curveValue = animationCurve.Evaluate(time);
+
+			if(curveValue < 0){
+				currentRotation = Quaternion.Lerp(startRot, Quaternion.Euler(-targetRot), -curveValue);
+			}else{
+				currentRotation = Quaternion.Lerp(startRot, endRot, curveValue);
+			}
+
+			if (localRotation) {
+				target.localRotation = currentRotation;
             } else {
-                target.rotation = Quaternion.Lerp(startRot, endRot, animationCurve.Evaluate(time));
+				target.rotation = currentRotation;
             }
+        }
+
+        public void SetTargetRotX(float x) {
+            targetRot.x = x;
+        }
+
+        public void SetTargetRotY(float y) {
+            targetRot.x = y;
+        }
+
+        public void SetTargetRotZ(float z) {
+            targetRot.z = z;
         }
 
         private void OnValidate() {

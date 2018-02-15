@@ -4,9 +4,9 @@ using System.Collections;
 using UnityEditor;
 
 
-namespace MRW.AnimationSystem {
+namespace Okomotive.AnimationSystem {
 
-    public class EditorCoroutine {
+    public sealed class EditorCoroutine {
         #region Fields
         private readonly IEnumerator routine;
         #endregion
