@@ -89,11 +89,15 @@ namespace Okomotive.AnimationSystem {
         }
 
         public void Stop() {
+
             if (!enabled) return;
 
             state = AnimationStateType.Idle;
             if (animationRoutine != null) {
                 StopCoroutine(animationRoutine);
+            }
+
+            if(singleStateRoutine != null) {
                 StopCoroutine(singleStateRoutine);
             }
         }

@@ -24,7 +24,7 @@ namespace Okomotive.AnimationSystem {
         private bool loop;
         [SerializeField]
         private bool triggerOnce;
-        [SerializeField]
+        [SerializeField, CurveProperty]
         private AnimationCurve curve;
         [SerializeField]
         private UnityEvent enterEvents;
@@ -137,13 +137,15 @@ namespace Okomotive.AnimationSystem {
                 diff = (float)EditorApplication.timeSinceStartup - startVal;
                 t += diff / time;
 
+                
+
                 action(t, speed.GetValue(), curve);
 
                 startVal = (float)EditorApplication.timeSinceStartup;
                 yield return null;
             }
-
-            action(1, speed.GetValue(), curve);
+				
+			action(1, speed.GetValue(), curve);
         }
 #endif
 

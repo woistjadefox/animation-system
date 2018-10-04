@@ -1,8 +1,11 @@
 #region UsingStatements
+
 using UnityEngine;
 using System;
 using System.Collections.Generic;
 using Okomotive.Toolset;
+using Okomotive.Toolset.PostProcessor;
+
 #endregion
 
 /// <summary>
@@ -12,7 +15,7 @@ using Okomotive.Toolset;
 /// </summary>
 [ExecuteInEditMode]
 [Serializable]
-public class BezierCurve : MonoBehaviour {
+public class BezierCurve : PostProcessBehaviour {
 	
 	#region PublicVariables
 	
@@ -120,8 +123,9 @@ public class BezierCurve : MonoBehaviour {
 	/// 	- Array of point objects that make up this curve
 	///		- Populated through editor
 	/// </summary>
-	[SerializeField] private BezierPoint[] points = new BezierPoint[0];
-
+	[SerializeField]
+    private BezierPoint[] points = new BezierPoint[0];
+    [SerializeField]
     private List<Vector3> curvePoints = new List<Vector3>();
 
     #endregion
@@ -145,31 +149,23 @@ public class BezierCurve : MonoBehaviour {
 	
 	void Awake(){
 		dirty = true;
-
-        ClearCurvePoints();
-
-
-
-        if (points.Length > 1) {
-            for (int i = 0; i < points.Length - 1; i++) {
-                AddCurvePoints(points[i], points[i + 1], resolution);
-            }
-
-            if (close) AddCurvePoints(points[points.Length - 1], points[0], resolution);
-        }
     }
 
-	#endregion
-	
-	#region PublicFunctions
+    public override void OnPostProcess() {
+        CalcCurvePoints();
+    }
 
-	/// <summary>
-	/// 	- Adds the given point to the end of the curve ("points" array)
-	/// </summary>
-	/// <param name='point'>
-	/// 	- The point to add.
-	/// </param>
-	public void AddPoint(BezierPoint point)
+    #endregion
+
+    #region PublicFunctions
+
+    /// <summary>
+    /// 	- Adds the given point to the end of the curve ("points" array)
+    /// </summary>
+    /// <param name='point'>
+    /// 	- The point to add.
+    /// </param>
+    public void AddPoint(BezierPoint point)
 	{
 		List<BezierPoint> tempArray = new List<BezierPoint>(points);
 		tempArray.Add(point);
@@ -263,8 +259,8 @@ public class BezierCurve : MonoBehaviour {
                     second = i;
                 }
             }
-
-            curvePercent = ApproximateLength(points[first], points[second]) / length;
+            
+			curvePercent = ApproximateLength(points[first], points[second]) / length;
 
             if (totalPercent + curvePercent > t) {
                 p1 = points[first];
@@ -390,6 +386,10 @@ public class BezierCurve : MonoBehaviour {
     /// </param>
     public static Vector3 GetPoint(BezierPoint p1, BezierPoint p2, float t)
 	{
+		if(p2 == null){
+            Debug.LogWarning("BezierCurve: P2 is unknown!");
+		}
+
 		if(p1.handle2 != Vector3.zero)
 		{
 			if(p2.handle1 != Vector3.zero) return GetCubicCurvePoint(p1.position, p1.globalHandle2, p2.globalHandle1, p2.position, t);
@@ -568,6 +568,19 @@ public class BezierCurve : MonoBehaviour {
 	
 	#endregion
 
+    public void CalcCurvePoints() {
+
+        ClearCurvePoints();
+
+        if (points.Length > 1) {
+            for (int i = 0; i < points.Length - 1; i++) {
+                AddCurvePoints(points[i], points[i + 1], resolution);
+            }
+
+            if (close) AddCurvePoints(points[points.Length - 1], points[0], resolution);
+        }
+    }
+
     public Vector3 GetClosestPositionOnX(Vector3 pos) {
 
         float closestDistance = float.MaxValue;
@@ -610,7 +623,7 @@ public class BezierCurve : MonoBehaviour {
 
         if (point.x > secondPoint.x) {
 
-            // naher punkt liegt vorne
+            // close point ahead
             dir = point - secondPoint;
             cameraPos = Converter.Remap(pos.x, secondPoint.x, point.x, 0, 1, true);
 
@@ -618,7 +631,7 @@ public class BezierCurve : MonoBehaviour {
 
         } else {
 
-            // naher punkt liegt hinten
+            // close point behinde
             dir = secondPoint - point;
             cameraPos = Converter.Remap(pos.x, point.x, secondPoint.x, 0, 1, true);
 
@@ -627,12 +640,15 @@ public class BezierCurve : MonoBehaviour {
         }
 
         DebugDraw.DrawMarker(targetPos, 3f, Color.black, Time.fixedDeltaTime);
+        //DebugDraw.DrawMarker(pos, 55f, Color.white, Time.fixedDeltaTime);
+        //DebugDraw.DrawMarker(point, 2f, Color.red, Time.fixedDeltaTime);
+        //DebugDraw.DrawMarker(secondPoint, 2f, Color.green, Time.fixedDeltaTime);
+
         return targetPos;
     }
 
-    
-	
-	/* needs testing
+
+    /* needs testing
 	public Vector3 GetPointAtDistance(float distance)
 	{
 		if(close)
